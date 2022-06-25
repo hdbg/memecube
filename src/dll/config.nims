@@ -1,0 +1,7 @@
+switch("app", "lib")
+# switch("nomain")
+switch("passL", "-Wl,--dynamicbase")
+# switch("cpu", "i386")
+switch("passC", "-m32")
+switch("passL", "-m32")
+switch("o", "memecube.dll")
