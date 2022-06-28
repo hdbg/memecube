@@ -1,6 +1,8 @@
 import winim/[core, extra, utils, winstr]
 import std/[segfaults, os, strutils]
 
+import chronicles
+
 const
   payload = block:
     echo staticExec r"nim c dll/loader.nim"
@@ -9,6 +11,19 @@ const
   targetProcess = "ac_client.exe"
 
   tempName = "temp.dll"
+
+
+template safeCallBool(message: static string, expression, after: untyped) =
+  if expression == FALSE:
+    error message, code=GetLastError()
+    quit()
+    after
+
+template safeCall0(message: static string, expression, after: untyped) =
+  if expression == 0:
+    error &"{message}", code=GetLastError()
+    quit()
+    after
 
 proc findProcess(): PROCESSENTRY32  =
   let hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0)
@@ -20,18 +35,12 @@ proc findProcess(): PROCESSENTRY32  =
 
   result.dwSize = DWORD sizeof result
 
-  if Process32First(hSnapshot, &result) == false.WINBOOL:
-    echo "[-] Couldn't get first process"
-    echo $GetLastError()
-    quit()
+  safeCallBool("process32First", Process32First(hSnapshot, &result))
 
   # $$ doesn't delete \0
   while strip($$(result.szExeFile), chars = {'\0'}) != targetProcess:
-    if Process32Next(hSnapshot, &result) == false.WINBOOL:
-      echo "[-] Couldn't find target process"
-      echo $GetLastError()
-      quit()
-
+    safeCallBool "process32Next", Process32Next(hSnapshot, &result)
+  
   echo "[+] Proc found: " & $result.th32ProcessID
 
   discard CloseHandle(hSnapshot)
@@ -48,10 +57,7 @@ proc main() =
 
   let hProcess = OpenProcess(PROCESS_ALL_ACCESS, false, procEntry.th32ProcessID)
 
-  if hProcess == 0.DWORD:
-    echo "[-] Can't open process"
-    echo "[*] Error ", $GetLastError()
-    quit()
+  safeCall0 "openProcess", hProcess
 
   echo "[+] Process handle: ", hProcess
 
@@ -63,14 +69,9 @@ proc main() =
     PAGE_READWRITE
   )
 
-  if szModule == nil:
-    let error = GetLastError()
+  safeCall0 "virtualAlloc", cast[DWORD](szModule)
 
-    echo "[-] Can't allocate memory"
-    echo "[*] Error ", $error
-    quit()
-
-  echo "[+] Allocated memory"
+  # echo "[+] Allocated memory"
 
   let bWritten = WriteProcessMemory(
     hProcess,
@@ -80,14 +81,9 @@ proc main() =
     NULL
   )
 
-  if bWritten == 0:
-    let error = GetLastError()
+  safeCall0 "WriteProcessMemory", bWritten
 
-    echo "[-] Can't write memory"
-    echo "[*] Error ", $error
-    quit()
-
-  echo "[+] Wroten memory" 
+  # echo "[+] Wroten memory" 
 
   writeFile(tempName, payload)
 
@@ -105,38 +101,25 @@ proc main() =
     nil
   )
 
-  if hThread == 0.Handle:
-    let error = GetLastError()
+  safeCall0 "CreateThread", int hThread
 
-    echo "[-] Can't start thread"
-    echo "[*] Error ", $error
-    quit()
-
-  echo "[+] Started thread"
+  echo "[+] Invoked thread"
 
   WaitForSingleObject(hThread, high(int).DWORD)
 
-  let threadExitCode: DWORD = 1
-  if GetExitCodeThread(hThread, unsafeAddr threadExitCode) == FALSE:
-    let error = GetLastError()
+  # let threadExitCode: DWORD = 1
+  # if GetExitCodeThread(hThread, unsafeAddr threadExitCode) == FALSE:
+  #   let error = GetLastError()
 
-    echo "[-] Can't get thread exit code"
-    echo "[*] Error ", $error
-    quit()
-  else:
-    echo "[*] Thread exit code: ", $threadExitCode
+  #   echo "[-] Can't get thread exit code"
+  #   echo "[*] Error ", $error
+  #   quit()
+  # else:
+  #   echo "[*] Thread exit code: ", $threadExitCode
   
 
-  if VirtualFreeEx(hProcess, szModule, 0.SIZE_T, MEM_RELEASE) == FALSE:
-    let error = GetLastError()
-
-    echo "[-] Can't dealloc memory"
-    echo "[*] Error ", $error
-
-    quit()
-
+  safeCallBool "VirtualFreeEx", VirtualFreeEx(hProcess, szModule, 0.SIZE_T, MEM_RELEASE)
   CloseHandle(hProcess)
-
   removeFile(tempName)
 
 main()

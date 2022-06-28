@@ -2,3 +2,5 @@
 /src/memecube.dll
 /stub.nim
 /temp.dll
+/tests/test_hook.exe
+/tests/test_hook.exe.idb
