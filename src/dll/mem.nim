@@ -69,19 +69,19 @@ proc createTramp(h: var Hook) =
 
   block createCall:
     let 
-      callInstrAddr = cast[int](h.trampoline) + h.stolen.len
-      callTarget = cast[int](h.target) - callInstrAddr - 5
+      callInstrAddr = cast[uint](h.trampoline) + h.stolen.len
+      callTarget = cast[uint](h.target) - callInstrAddr - 5.uint
 
     cast[ptr OpCode](callInstrAddr)[] = call
-    cast[ptr int32](callInstrAddr + 1)[] = callTarget.int32
+    cast[ptr uint32](callInstrAddr + 1)[] = callTarget.uint32
 
   block createJump:
     let 
-      jmpInstrAddr = cast[int](h.trampoline) + h.stolen.len + 5 # 5 for previous call
-      jmpTarget = cast[int](h.original) - jmpInstrAddr
+      jmpInstrAddr = cast[uint](h.trampoline) + h.stolen.len + 5.uint # 5 for previous call
+      jmpTarget = (cast[uint](h.original) + h.stolen.len + 5) - jmpInstrAddr
 
     cast[ptr OpCode](jmpInstrAddr)[] = jmp
-    cast[ptr int32](jmpInstrAddr + 1)[] = jmpTarget.int32
+    cast[ptr uint32](jmpInstrAddr + 1)[] = jmpTarget.uint32
 
   var oldProtect: DWORD
   VirtualProtect(
