@@ -13,17 +13,15 @@ const
   tempName = "temp.dll"
 
 
-template safeCallBool(message: static string, expression, after: untyped) =
+template safeCallBool(message: static string, expression) =
   if expression == FALSE:
     error message, code=GetLastError()
     quit()
-    after
 
-template safeCall0(message: static string, expression, after: untyped) =
+template safeCall0(message: static string, expression) =
   if expression == 0:
-    error &"{message}", code=GetLastError()
+    error message, code=GetLastError()
     quit()
-    after
 
 proc findProcess(): PROCESSENTRY32  =
   let hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0)
