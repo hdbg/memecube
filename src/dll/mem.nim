@@ -1,5 +1,7 @@
 import winim
-import std/tables
+import std/[tables, segfaults]
+
+export segfaults
 
 proc write*[T](address: int, data: T) = 
   cast[ptr T](address)[] = data
@@ -31,6 +33,9 @@ const
   call = 0xE8.OpCode
 
 var nopped: Table[int, seq[OpCode]]
+
+converter ptrToUint(x: pointer): uint =
+  cast[uint](x) 
 
 proc setNop*(address: int, len: int = 1) = 
   if nopped.contains(address):
@@ -67,18 +72,20 @@ proc createTramp(h: var Hook) =
 
   copyMem h.trampoline, unsafeAddr h.stolen[0], len h.stolen 
 
+  let lenStolen = uint h.stolen.len
+
   block createCall:
     let 
-      callInstrAddr = cast[uint](h.trampoline) + h.stolen.len
-      callTarget = cast[uint](h.target) - callInstrAddr - 5.uint
+      callInstrAddr = cast[uint](h.trampoline) + lenStolen
+      callTarget = cast[uint](h.target) - callInstrAddr - lenStolen + 1
 
     cast[ptr OpCode](callInstrAddr)[] = call
     cast[ptr uint32](callInstrAddr + 1)[] = callTarget.uint32
 
   block createJump:
     let 
-      jmpInstrAddr = cast[uint](h.trampoline) + h.stolen.len + 5.uint # 5 for previous call
-      jmpTarget = (cast[uint](h.original) + h.stolen.len + 5) - jmpInstrAddr
+      jmpInstrAddr = cast[uint](h.trampoline) + h.stolen.len.uint + 5.uint # 5 for previous call
+      jmpTarget = cast[uint](h.original) - jmpInstrAddr.uint + 1
 
     cast[ptr OpCode](jmpInstrAddr)[] = jmp
     cast[ptr uint32](jmpInstrAddr + 1)[] = jmpTarget.uint32
@@ -100,10 +107,13 @@ template tempWrite(address: pointer, length: int, body: untyped) =
 proc enable*(h: var Hook) =
   assert not h.state
 
-  tempWrite(h.original, 5):
+  tempWrite(h.original, len h.stolen):
+    for i in 0..<len(h.stolen):
+      cast[ptr OpCode](h.original.ptrToUint + i.uint)[] = nop
+
     cast[ptr OpCode](h.original)[] = jmp
-    cast[ptr int32](cast[int](h.original) + 1)[] = int32(
-      cast[int](h.original) - cast[int](h.target) + 5
+    cast[ptr uint32](h.original.ptrToUint + 1.uint)[] = uint32(
+       h.trampoline.ptrToUint - h.original.ptrToUint - 5
     )
 
   h.state = true
