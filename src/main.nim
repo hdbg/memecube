@@ -1,7 +1,11 @@
 import winim/lean
-import chronicles
+# import chronicles
 
-{.passC:"-s"}
+import cube/[mem, types, globals]
+import std/[segfaults, os, options, strutils]
+
+import cube/hacks/[aimbot]
+
 
 proc CheatMain() = 
   AllocConsole()
@@ -10,10 +14,15 @@ proc CheatMain() =
   proc freopen_s(stream: ptr File, filename, mode: cstring, outStream: File): cint {.nodecl, importc, header: "stdio.h".}
   discard freopen_s(cast[ptr File](stdout), "CONOUT$", "w", stdout)
 
-  info "attached"
+  echo "attached"
 
-  # while true: discard
+  defer: echo "exception"
 
+  while true:
+    20.sleep
+    globals.update()
+
+    aimbot.onTick()
 
 proc getCurrentModule: HINSTANCE =
   discard GetModuleHandleEx(

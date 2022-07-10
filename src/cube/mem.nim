@@ -3,8 +3,10 @@ import std/[tables, segfaults]
 
 export segfaults
 
-proc write*[T](address: int, data: T) = 
+proc write*[T, Y](address: Y, data: T) = 
   cast[ptr T](address)[] = data
+proc read*[T](address: uint): T =
+  cast[ptr T](address)[]
 proc read*[T](address: int): T =
   cast[ptr T](address)[]
 

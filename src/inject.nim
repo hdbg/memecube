@@ -5,7 +5,12 @@ import chronicles
 
 const
   payload = block:
-    echo staticExec r"nim c dll/loader.nim"
+    let result = staticExec r"nim c --app:lib --passL:-Wl,--dynamicbase --passC:-m32 --passL:-m32 -o:memecube.dll main.nim"
+
+    if "Error" in result:
+      echo result
+      raise Defect.newException("Dll compilation error!")
+
     staticRead"memecube.dll"
 
   targetProcess = "ac_client.exe"
