@@ -27,6 +27,8 @@ type
     isFiring*: bool
     name*: array[16, char]
 
+  PlayerPtr* = ptr Player
+
 # Vector based math
 proc `+`*(f, s: Vector3): Vector3 = Vector3(x: (s.x + f.x), y: (s.y + f.y), z: (s.z + f.z))
 proc `-`*(s, f: Vector3): Vector3 = Vector3(x: (s.x - f.x), y: (s.y - f.y), z: (s.z - f.z))
@@ -53,16 +55,7 @@ proc `$`(x: Player): string =
 
   temp.join("")
 
-proc playersToAngles*(src, dest: Player): Angle2 =
-  # echo "[Angles] Source: ", src, " Dest: ", dest
 
-  let headRelative = dest.head - src.head
-
-  result.pitch = arcsin(
-    headRelative.z / headRelative.length 
-  ).radToDeg
-
-  result.yaw = ((arctan2(headRelative.y, headRelative.x).radToDeg) + 90.float32)
 
   # while result.yaw >= 180: result.yaw -= 180
 

@@ -1,7 +1,8 @@
 import winim/lean
 # import chronicles
 
-import cube/[mem, types, globals]
+import cube/[types, globals]
+import cube/core/[hook, mem]
 import std/[segfaults, os, options, strutils]
 
 import cube/hacks/[aimbot]
@@ -20,7 +21,6 @@ proc CheatMain() =
 
   while true:
     20.sleep
-    globals.update()
 
     aimbot.onTick()
 

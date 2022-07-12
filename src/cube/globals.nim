@@ -1,4 +1,7 @@
 import types
+import core/mem
+
+import std/sequtils
 
 type
   Offset* = uint
@@ -9,17 +12,10 @@ const
   playerListSizeOffset = 0x58efe4.Offset
 
 var
-  localPlayer*: Player
-  localPlayerPtr*: ptr Player = cast[ptr ptr Player](localPlayerOffset)[]
+  localPlayer* = Player.get(localPlayerOffset, depth=2)
 
-  playerList*: seq[Player]
-
-proc update(_: type localPlayer) = 
-  localPlayer = cast[ptr ptr Player](localPlayerOffset)[][]
-
-proc update(_: type playerList) = 
-  playerList.setLen 0
-
+  
+iterator iterPlayers*(): ptr Player = 
   let 
     playersBase = cast[ptr int](playerListOffset)[]
     playersCount = cast[ptr int32](playerListSizeOffset)[]
@@ -28,8 +24,6 @@ proc update(_: type playerList) =
     for i in 0..<playersCount:
       let ptrPlayer = cast[ptr ptr Player](playersBase + 0x4 + (i * 0x4))
 
-      playerList.add ptrPlayer[][]
+      yield ptrPlayer[]
 
-proc update* = 
-  localPlayer.update
-  playerList.update
+proc getPlayers*(): seq[ptr Player] = toSeq(iterPlayers())
