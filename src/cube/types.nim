@@ -23,7 +23,9 @@ type
     padding2: array[0x25, uint8]
     isCrouching*: bool
 
-    padding3: array[0x1A2, uint8]
+    padding3: array[135, uint8]
+    
+    state*: PlayerState
     isFiring*: bool
     name*: array[16, char]
 
