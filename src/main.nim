@@ -2,11 +2,21 @@ import winim/lean
 # import chronicles
 
 import cube/[types, globals]
-import cube/core/[hook, mem]
+import cube/core/[hook, mem, helpers]
 import std/[segfaults, os, options, strutils]
 
 import cube/hacks/[aimbot]
 
+let 
+  glHandle = LoadLibraryA("opengl32.dll")
+  glSwapBuffer = cast[proc (hdc: int32){.stdcall.}](GetProcAddress(glHandle, "wglSwapBuffers")) 
+
+var swapBufferHook: Hook[type(glSwapBuffer)]
+
+proc glSwapBufferHook(hdc: int32) {.stdcall.} = 
+  aimbot.onTick()
+
+  swapBufferHook.trampoline(hdc)
 
 proc CheatMain() = 
   AllocConsole()
@@ -17,12 +27,11 @@ proc CheatMain() =
 
   echo "attached"
 
-  defer: echo "exception"
+  # freezeProgram()
 
-  while true:
-    20.sleep
+  swapBufferHook = Hook.init(glSwapBuffer, glSwapBufferHook)
+  # unfreezeProgram()
 
-    aimbot.onTick()
 
 proc getCurrentModule: HINSTANCE =
   discard GetModuleHandleEx(

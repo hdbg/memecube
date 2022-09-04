@@ -12,3 +12,5 @@ bin           = @["inject"]
 requires "nim >= 1.6.6"
 requires "winim"
 requires "chronicles"
+# requires "nimgl >= 1.3.2"
+# requires "nimsdl2"

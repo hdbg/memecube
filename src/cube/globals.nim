@@ -10,7 +10,7 @@ const
   localPlayerOffset = 0x587c0c.Offset
   playerListOffset = 0x587c10.Offset
   playerListSizeOffset = 0x58efe4.Offset
-
+  
 var
   localPlayer* = Player.get(localPlayerOffset, depth=2)
 
